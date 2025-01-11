@@ -1,21 +1,26 @@
 from flask import Flask, request, jsonify
+import datetime
 
 app = Flask(__name__)
 
-# Variable pour stocker les données
-data = {"niveau": 0}
-
-# Route pour recevoir les données de l'ESP32
+# Endpoint pour recevoir les données du capteur
 @app.route('/update', methods=['POST'])
-def update_data():
-    global data
-    data["niveau"] = request.json.get("niveau", 0)
-    return jsonify({"message": "Data received"}), 200
+def update():
+    # Récupérer les données envoyées par l'ESP32
+    data = request.get_json()
 
-# Route pour envoyer les données au site web
-@app.route('/data', methods=['GET'])
-def get_data():
-    return jsonify(data), 200
+    if not data or 'niveau' not in data:
+        return jsonify({"error": "Invalid data"}), 400
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    niveau = data['niveau']
+    current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    # Log des données reçues
+    print(f"Niveau reçu: {niveau}, Heure: {current_time}")
+
+    return jsonify({"message": "Données reçues", "niveau": niveau, "time": current_time}), 200
+
+if __name__ == "__main__":
+    import os
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
